@@ -6,6 +6,8 @@ router.post('/login', auth.login)
 
 router.get('/logged', isAuth, auth.logged)
 
+router.get('/logout', isAuth, auth.logout)
+
 router.post('/register', auth.register)
 
 module.exports = router

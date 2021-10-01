@@ -9,13 +9,14 @@ const isAuth = async (req, res, next) => {
     try {
 
       var decode = await jwtHelper.verityToken(token)
-      req.user = decode;
 
       let userInfo = await User.findOne({
         where: {
-          id: req.user.id
+          id: decode.id
         }
       });
+
+      req.user = userInfo;
       
       if (userInfo != null)
         next()

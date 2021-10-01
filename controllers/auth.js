@@ -11,39 +11,38 @@ module.exports = {
     try {
       
       let userLogin = {
-        username : (req.body.username !== null && req.body.username !== undefined) ? req.body.username : "",
-        email : (req.body.email !== null && req.body.email !== undefined) ? req.body.email : "",
-        phone : (req.body.phone !== null && req.body.phone !== undefined) ? req.body.phone : "",
+        username : req.body.username,
         password: req.body.password
+      }
+
+      if (userLogin.username == "" || userLogin.username == null || userLogin.username == undefined) {
+        throw {message: 'Dữ liệu không đầy đủ'}
       }
 
       var userInfo = null
 
-      if (userLogin.username != "") {
+      userInfo = await User.scope('withPassword').findOne({
+        where: {
+          username: {
+            [Op.iLike]: userLogin.username
+          }
+        }
+      });
+      
+      if (userInfo == null) {
         userInfo = await User.scope('withPassword').findOne({
           where: {
-            username: {
-              [Op.iLike]: userLogin.username
-            }
+            email: userLogin.username
           }
         });
       }
-      else if (userLogin.email != "") {
+      
+      if (userInfo == null) {
         userInfo = await User.scope('withPassword').findOne({
           where: {
-            email: userLogin.email
+            phone: userLogin.username
           }
         });
-      }
-      else if (userLogin.phone != "") {
-        userInfo = await User.scope('withPassword').findOne({
-          where: {
-            phone: userLogin.phone
-          }
-        });
-      }
-      else {
-        throw {message: 'No username or email or phone number'}
       }
 
       if (userInfo == null) {
@@ -73,7 +72,7 @@ module.exports = {
 
     } catch (err) {
       console.log(err);
-      res.status(err.status || 400).send({message: err.error || ''})
+      res.status(err.status || 400).send(err)
     }
   },
   
@@ -82,10 +81,34 @@ module.exports = {
   //
   logged: async (req, res) => {
     try {
-      let user_id = req.user.user_id
-      const userInfo = await userModel.getInfo(user_id)
+      var user = req.user
+      const userInfo = await User.findOne({
+        where: {
+          id: user.id
+        }
+      })
+
+      if (userInfo == null) {
+        throw {message: 'Tài khoản không tồn tại'}
+      }
 
       res.json(userInfo)
+    } catch (err) {
+      console.log(err);
+      res.status(err.status || 400).send({message: err.error || ''})
+    }
+  },
+
+  //
+  // LOGOUT
+  //
+  logout: async (req, res) => {
+    try {
+      res.cookie('x-access-token',"del", {httpOnly: true}) 
+      res.json({
+        guest: true
+      })
+
     } catch (err) {
       console.log(err);
       res.status(err.status || 400).send({message: err.error || ''})
@@ -101,10 +124,9 @@ module.exports = {
       let newUser = {
         name : validator.trimFull(req.body.name || ""),
         password : req.body.password,
-        email : (req.body.email !== null && req.body.email !== undefined) ? req.body.email : null,
-        phone : (req.body.phone !== null && req.body.phone !== undefined) ? req.body.phone : null,
-        birthday : new Date(req.body.birthday),
-        color: req.body.color
+        email : (req.body.email !== "" && req.body.email !== undefined) ? req.body.email : null,
+        phone : (req.body.phone !== "" && req.body.phone !== undefined) ? req.body.phone : null,
+        birthday : new Date(req.body.birthday)
       }
       
       // check validator data
@@ -132,9 +154,7 @@ module.exports = {
       }
 
       let colors = ['rose','amber','lime','violet','sky']
-      if (colors.findIndex(v => v == newUser.color) < 0) {
-        newUser.color = colors[0]
-      }
+      newUser.color = colors[Math.floor(Math.random() * colors.length)]
 
       const userInfo = await User.create(newUser)
 

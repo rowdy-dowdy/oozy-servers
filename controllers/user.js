@@ -1,5 +1,6 @@
 const User = require('../models/User.js');
-const { Op } = require("sequelize");
+const validator = require('../helpers/validator.js')
+const { Op, Sequelize } = require("sequelize");
 
 module.exports = {
   getUserById: async (req, res) => {
@@ -12,6 +13,90 @@ module.exports = {
           id: userId
         }
       })
+
+      if (userInfo == null) {
+        throw {message: 'Tài khoản không tồn tại'}
+      }
+
+      res.json(userInfo)
+
+    } catch (err) {
+      console.log(err);
+      res.status(err.status || 400).send({message: err.error || ''})
+    }
+  },
+
+
+  getUserByUsername: async (req, res) => {
+    try {
+
+      var username = req.params.username
+
+      var userInfo = await User.findOne({
+        where: {
+          username: {
+            [Op.iLike]: username
+          }
+        }
+      })
+
+      if (userInfo == null) {
+        throw {message: 'Tài khoản không tồn tại'}
+      }
+
+      res.json(userInfo)
+
+    } catch (err) {
+      console.log(err);
+      res.status(err.status || 400).send({message: err.error || ''})
+    }
+  },
+
+
+  getUserByEmail: async (req, res) => {
+    try {
+
+      var email = req.params.email
+
+      if (!validator.isEmail(email))
+        throw {message: 'Định dạng email không hợp lệ'}
+
+      var userInfo = await User.findOne({
+        where: {
+          email: email
+        }
+      })
+
+      if (userInfo == null) {
+        throw {message: 'Email chưa tồn tại'}
+      }
+
+      res.json(userInfo)
+
+    } catch (err) {
+      console.log(err);
+      res.status(err.status || 400).send({message: err.error || ''})
+    }
+  },
+
+
+  getUserByPhone: async (req, res) => {
+    try {
+
+      var phone = req.params.phone
+
+      if (!validator.isMobilePhone(phone))
+        throw {message: 'Số điện thoại không hợp lệ'}
+
+      var userInfo = await User.findOne({
+        where: {
+          phone: phone
+        }
+      })
+
+      if (userInfo == null) {
+        throw {message: 'Số điện thoại chưa tồn tại'}
+      }
 
       res.json(userInfo)
 
@@ -80,4 +165,26 @@ module.exports = {
       res.status(err.status || 400).send({message: err.error || ''})
     }
   },
+
+
+  getRandomUser: async (req, res) => {
+    try {
+
+      var user = req.user
+      var limit = req.params.limit || 3
+
+      const listUser = await User.findAll({
+        limit: limit,
+        where: {
+          id: {[Op.ne]: user.id,}
+        },
+        order: [Sequelize.literal('RANDOM()')]
+      })
+
+      res.json(listUser)
+
+    } catch (err) {
+      res.status(err.status || 400).send(err)
+    }
+  }
 }

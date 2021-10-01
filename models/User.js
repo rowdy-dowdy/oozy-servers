@@ -62,7 +62,9 @@ User.beforeCreate(async (user, options) => {
 
     // name
     let name = user.name
-    let nameReplace = name.replace(/([^\x00-\x7F]|[\s])/g, "")
+
+    // regex test /^\w+$/
+    let nameReplace = name.replace(/([!@&-=\^\[\]\/\\#,+()$~%.'":*?<>{}]|[^\x00-\x7F]|[\s])/g, "")
     let max = 9999,
         min = 1000,
         checkCount = 0

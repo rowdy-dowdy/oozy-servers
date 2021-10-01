@@ -68,6 +68,39 @@ module.exports = {
   },
 
 
+  getType: async (req, res) => {
+    try {
+      
+      var user = req.user
+      var friendShipId = req.params.id
+
+      var result = await UserRelationship.findOne({
+        attributes: ['type'],
+        where: {
+          [Op.or]: [
+            { relatingUserID: user.id },
+            { relatedUserID: user.id }
+          ],
+          [Op.or]: [
+            { relatingUserID: friendShipId },
+            { relatedUserID: friendShipId }
+          ],
+        }
+      })
+
+      // "request-sent"  : đã gửi yêu cầu kết bạn
+      // ""              : chưa có mối quan hệ nào
+      // "friends"       : là bạn của nhau
+
+      res.json(result?.type || "")
+
+    } catch (err) {
+      console.log(err);
+      res.status(err.status || 400).send({message: err.error || ''})
+    }
+  },
+
+
   create: async (req, res) => {
     try {
       
